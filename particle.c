@@ -73,8 +73,6 @@ void applyConstraint(Particle* particles, int* count)
             particle->pos_cur.y = center.y + n.y * (circle_radius - PARTICLE_RADIUS);
         }
     }
-    
-
 }
 
 void solveCollision(Particle* particles, int* count)
@@ -170,7 +168,7 @@ void clearScreen(Particle* particles, int* count)
 
 int main(void)
 {
-    InitWindow(SCREENWIDTH, SCREENHEIGHT, "Hi from Raylib");
+    InitWindow(SCREENWIDTH, SCREENHEIGHT, "Particle simulator");
 
     SetTargetFPS(144);
 
