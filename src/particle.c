@@ -1,33 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-
-#include "raylib.h"
-#include "raymath.h"
-
-#define DARK CLITERAL(Color){15, 15, 15, 255}
-#define SCREENWIDTH 1920
-#define SCREENHEIGHT 1080
-#define CIRCLE_RADIUS 300
-
-#define MAX_PARTICLES 2500
-#define PARTICLE_RADIUS 5
-
-typedef struct Particle
-{
-    Vector2 pos_cur;
-    Vector2 pos_old;
-    Vector2 acceleration;
-    Color color;
-} Particle;
-
-typedef struct Link
-{
-    Particle particle_1;
-    Particle particle_2;
-    float target_dist;
-} Link;
-
-Vector2 gravity = {0.0f, 1000.0f};
+#include "particle.h"
 
 void updatePositions(Particle* particles, float dt, int* count)
 {
@@ -54,6 +25,7 @@ void accelerate(Particle* particle, Vector2 acc)
     particle->acceleration.y += acc.y;
 }
 
+Vector2 gravity = {0.0f, 1000.0f};
 void applyGravity(Particle* particles, int* count)
 {
     for (int i = 0; i < *count; i++)
@@ -128,7 +100,23 @@ void applyColor(Particle* particles, int* count, float dt)
     }
 }
 
-void accelerateToMouse(Particle* particles, int* count, float strength);
+void accelerateToMouse(Particle* particles, int* count, float strength)
+{
+    for (int i = 0; i < *count; i++)
+    {
+        Vector2 mouse_pos = GetMousePosition();
+        Particle* cur = &particles[i];
+        Vector2 disp = Vector2Subtract(mouse_pos, cur->pos_cur);
+        float distance = Vector2Length(disp);
+        if (distance < 0.0001)
+        {
+            continue;
+        }
+            
+        cur->acceleration.x += disp.x * strength / distance;
+        cur->acceleration.y += disp.y * strength / distance;
+    }
+}
 
 void update(Particle* particles, int* count, float dt)
 {
@@ -151,60 +139,6 @@ void update(Particle* particles, int* count, float dt)
     }
 }
 
-Particle particles[MAX_PARTICLES] = {0};
-
-Particle genParticle(void)
-{
-    int x = GetRandomValue(100 + PARTICLE_RADIUS, 700 - PARTICLE_RADIUS);
-    int y = GetRandomValue(100 + PARTICLE_RADIUS, 500 - PARTICLE_RADIUS);
-
-    Particle randParticle = {.pos_cur.x=x, .pos_cur.y=y, .pos_old.x=x, .pos_old.y=y, .color=RAYWHITE};
-    return randParticle;
-}
-
-int addParticle(Particle particle, Particle *particles, int *counter, int size)
-{
-     if (*counter < size)
-     {
-        particles[*counter] = particle;
-        (*counter)++;
-
-        return 1;
-     }
-     else
-     {
-        printf("Array is full, cannot add more particles\n");
-        return 0;
-     }
-}
-
-void drawParticles(Particle* particles, int* counter)
-{
-    for (int i = 0; i < *counter; i++)
-    {
-        DrawCircle(particles[i].pos_cur.x, particles[i].pos_cur.y, PARTICLE_RADIUS, particles[i].color);
-        //DrawCircleLines(particles[i].pos_cur.x, particles[i].pos_cur.y, PARTICLE_RADIUS, DARK);
-    }
-}
-
-void accelerateToMouse(Particle* particles, int* count, float strength)
-{
-    for (int i = 0; i < *count; i++)
-    {
-        Vector2 mouse_pos = GetMousePosition();
-        Particle* cur = &particles[i];
-        Vector2 disp = Vector2Subtract(mouse_pos, cur->pos_cur);
-        float distance = Vector2Length(disp);
-        if (distance < 0.0001)
-        {
-            continue;
-        }
-            
-        cur->acceleration.x += disp.x * strength / distance;
-        cur->acceleration.y += disp.y * strength / distance;
-    }
-}
-
 void clearScreen(Particle* particles, int* count)
 {
     if (*count > 0)
@@ -212,58 +146,4 @@ void clearScreen(Particle* particles, int* count)
         memset(particles, 0, *count * sizeof(particles[0]));
         *count = 0;
     }
-}
-
-int main(void)
-{   
-    InitWindow(SCREENWIDTH, SCREENHEIGHT, "Particle simulator");
-    MaximizeWindow();
-
-    SetTargetFPS(144);
-
-    int frame_count = 0;
-    int counter = 0;
-    char title[1024];
-
-    while(!WindowShouldClose()) 
-    {
-        float dt = GetFrameTime();
-        frame_count++;
-
-        if (IsKeyPressed(KEY_C))
-        {
-            clearScreen(particles, &counter);
-        }
-
-        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
-        {
-            if (frame_count % 4 == 0)
-            {
-            Vector2 mouse_pos = GetMousePosition();
-            Particle mouseParticle = {.pos_cur.x=(float)mouse_pos.x, .pos_cur.y=(float)mouse_pos.y, .pos_old.x=(float)mouse_pos.x, .pos_old.y=(float)mouse_pos.y - 1.0f, .color=RAYWHITE};
-            addParticle(mouseParticle, particles, &counter, MAX_PARTICLES);
-            }
-        }
-
-        update(particles, &counter, dt);
-
-        sprintf(title, "FPS : %d | Particles : %d", GetFPS(), counter);
-        SetWindowTitle(title);
-
-        BeginDrawing();
-        ClearBackground(DARK);
-
-        DrawCircleLines(SCREENWIDTH / 2, SCREENHEIGHT / 2, CIRCLE_RADIUS, GRAY); //draw constraint
-        //DrawCircle(SCREENWIDTH / 2, SCREENHEIGHT / 2, 3, RED); //center dot
-        //DrawRectangleLines(100, 100, 600, 600, GRAY);
-        //DrawLine(SCREENWIDTH / 2, 0, SCREENWIDTH / 2, SCREENHEIGHT, GRAY);
-        //DrawLine(0, SCREENHEIGHT / 2, SCREENWIDTH, SCREENHEIGHT / 2, GRAY);
-
-        drawParticles(particles, &counter);
-        
-        EndDrawing();
-    }
-    CloseWindow();
-
-    return 0;
 }
