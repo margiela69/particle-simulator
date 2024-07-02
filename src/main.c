@@ -48,6 +48,7 @@ int main(void)
 
     SetTargetFPS(144);
 
+    Particle particles[MAX_PARTICLES] = {0};
     int frame_count = 0;
     int counter = 0;
     char title[1024];

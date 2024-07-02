@@ -1,11 +1,13 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
+#include <string.h>
+
 #include "raylib.h"
 #include "raymath.h"
 
-#define SCREENWIDTH 1920
-#define SCREENHEIGHT 1080
+#define SCREENWIDTH 1280
+#define SCREENHEIGHT 720
 
 #define CIRCLE_RADIUS 300
 #define MAX_PARTICLES 2500
@@ -19,7 +21,7 @@ typedef struct Particle
     Color color;
 } Particle;
 
-Particle particles[MAX_PARTICLES] = {0};
+//Particle particles[MAX_PARTICLES];
 
 void updatePositions(Particle* particles, float dt, int* count);
 void accelerate(Particle* particle, Vector2 acc);
