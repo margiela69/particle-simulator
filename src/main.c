@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "raylib.h"
@@ -16,27 +17,33 @@ Particle genParticle(void)
     return randParticle;
 }
 
-int addParticle(Particle particle, Particle *particles, int *counter, int size)
+void resizeParticles(particles_da *particles)
 {
-     if (*counter < size)
-     {
-        particles[*counter] = particle;
-        (*counter)++;
-
-        return 1;
-     }
-     else
-     {
-        printf("Array is full, cannot add more than %d particles\n", MAX_PARTICLES);
-        return 0;
-     }
+    if (particles->capacity == 0) particles->capacity = 4;
+    else particles->capacity *= 2;
+    
+    particles->elements = realloc(particles->elements, particles->capacity * sizeof(Particle));
+    printf("allocating addition memory for array: new capacity = %zu\n", particles->capacity);
+    if (particles->elements == NULL) {
+        printf("An error occured when resizing particle array... Exiting\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
-void drawParticles(Particle* particles, int* counter)
+void addParticle(Particle particle, particles_da *particles)
 {
-    for (int i = 0; i < *counter; i++)
+    if (particles->capacity <= particles->count) {
+        resizeParticles(particles);
+    }
+    
+    particles->elements[particles->count++] = particle;
+}
+
+void drawParticles(particles_da *particles) //HERE
+{
+    for (int i = 0; i < particles->count; i++)
     {
-        DrawCircle(particles[i].pos_cur.x, particles[i].pos_cur.y, PARTICLE_RADIUS, particles[i].color);
+        DrawCircle(particles->elements[i].pos_cur.x, particles->elements[i].pos_cur.y, PARTICLE_RADIUS, particles->elements[i].color);
         //DrawCircleLines(particles[i].pos_cur.x, particles[i].pos_cur.y, PARTICLE_RADIUS, DARK);
     }
 }
@@ -48,9 +55,9 @@ int main(void)
 
     SetTargetFPS(144);
 
-    Particle particles[MAX_PARTICLES] = {0};
+    particles_da *particles = calloc(1, sizeof(particles_da));
+    
     int frame_count = 0;
-    int counter = 0;
     char title[1024];
 
     while(!WindowShouldClose()) 
@@ -60,7 +67,7 @@ int main(void)
 
         if (IsKeyPressed(KEY_C))
         {
-            clearScreen(particles, &counter);
+            clearScreen(particles);
         }
 
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
@@ -69,13 +76,13 @@ int main(void)
             {
             Vector2 mouse_pos = GetMousePosition();
             Particle mouseParticle = {.pos_cur.x=(float)mouse_pos.x, .pos_cur.y=(float)mouse_pos.y, .pos_old.x=(float)mouse_pos.x, .pos_old.y=(float)mouse_pos.y - 1.0f, .color=RAYWHITE};
-            addParticle(mouseParticle, particles, &counter, MAX_PARTICLES);
+            addParticle(mouseParticle, particles);
             }
         }
 
-        update(particles, &counter, dt);
+        update(particles, dt);
 
-        sprintf(title, "FPS : %d | Particles : %d", GetFPS(), counter);
+        sprintf(title, "FPS : %d | Particles : %d", GetFPS(), particles->count);
         SetWindowTitle(title);
 
         BeginDrawing();
@@ -87,11 +94,11 @@ int main(void)
         //DrawLine(SCREENWIDTH / 2, 0, SCREENWIDTH / 2, SCREENHEIGHT, GRAY);
         //DrawLine(0, SCREENHEIGHT / 2, SCREENWIDTH, SCREENHEIGHT / 2, GRAY);
 
-        drawParticles(particles, &counter);
+        drawParticles(particles); // HERE
         
         EndDrawing();
     }
     CloseWindow();
-
+    free_particles(particles);
     return 0;
 }

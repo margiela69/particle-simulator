@@ -1,10 +1,10 @@
 #include "particle.h"
 
-void updatePositions(Particle* particles, float dt, int* count)
+void updatePositions(particles_da *particles, float dt)
 {
-    for (int i = 0; i < *count; i++)
+    for (int i = 0; i < particles->count; i++)
     {
-        Particle* particle = &(particles[i]);
+        Particle* particle = &(particles->elements[i]);
 
         Vector2 velocity = {(particle->pos_cur.x - particle->pos_old.x), (particle->pos_cur.y - particle->pos_old.y)};
 
@@ -26,19 +26,19 @@ void accelerate(Particle* particle, Vector2 acc)
 }
 
 Vector2 gravity = {0.0f, 1000.0f};
-void applyGravity(Particle* particles, int* count)
+void applyGravity(particles_da *particles)
 {
-    for (int i = 0; i < *count; i++)
+    for (int i = 0; i < particles->count; i++)
     {
-        accelerate(&(particles[i]), gravity);
+        accelerate(&(particles->elements[i]), gravity);
     }
 }
 
-void applyConstraint(Particle* particles, int* count)
+void applyConstraint(particles_da *particles)
 {
-    for (int i = 0; i < *count; i++)
+    for (int i = 0; i < particles->count; i++)
     {
-        Particle* particle = &(particles[i]);
+        Particle* particle = &(particles->elements[i]);
 
         Vector2 center = {SCREENWIDTH / 2, SCREENHEIGHT / 2};
         float circle_radius = CIRCLE_RADIUS;
@@ -55,15 +55,15 @@ void applyConstraint(Particle* particles, int* count)
     }
 }
 
-void solveCollision(Particle* particles, int* count)
+void solveCollision(particles_da *particles)
 {
-    for (int i = 0; i < *count; ++i)
+    for (int i = 0; i < particles->count; ++i)
     {
-        Particle* particle1 = &(particles[i]);
+        Particle* particle1 = &(particles->elements[i]);
 
-        for (int j = i+1; j < *count; ++j)
+        for (int j = i+1; j < particles->count; ++j)
         {
-            Particle* particle2 = &particles[j];
+            Particle* particle2 = &(particles->elements[j]);
             Vector2 collision_axis = Vector2Subtract(particle1->pos_cur, particle2->pos_cur);
             float distance = Vector2Length(collision_axis);
 
@@ -82,11 +82,11 @@ void solveCollision(Particle* particles, int* count)
     }
 }
 
-void applyColor(Particle* particles, int* count, float dt)
+void applyColor(particles_da *particles, float dt)
 {
-    for (int i = 0; i < *count; i++)
+    for (int i = 0; i < particles->count; i++)
     {
-        Particle* particle = &particles[i];
+        Particle* particle = &(particles->elements[i]);
         Vector2 vel = {(particle->pos_cur.x - particle->pos_old.x), (particle->pos_cur.y - particle->pos_old.y)};
 
         float speed = fabs(sqrt(vel.x * vel.x + vel.y * vel.y));
@@ -100,12 +100,12 @@ void applyColor(Particle* particles, int* count, float dt)
     }
 }
 
-void accelerateToMouse(Particle* particles, int* count, float strength)
+void accelerateToMouse(particles_da *particles, float strength)
 {
-    for (int i = 0; i < *count; i++)
+    for (int i = 0; i < particles->count; i++)
     {
         Vector2 mouse_pos = GetMousePosition();
-        Particle* cur = &particles[i];
+        Particle* cur = &(particles->elements[i]);
         Vector2 disp = Vector2Subtract(mouse_pos, cur->pos_cur);
         float distance = Vector2Length(disp);
         if (distance < 0.0001)
@@ -118,32 +118,47 @@ void accelerateToMouse(Particle* particles, int* count, float strength)
     }
 }
 
-void update(Particle* particles, int* count, float dt)
+void update(particles_da *particles, float dt)
 {
     int sub_steps = 8;
     float sub_dt = dt / (float)sub_steps;
-
+    
     for (int i = 0; i < sub_steps; i++)
     {
-        applyGravity(particles, count);
+        applyGravity(particles);
 
-        if (IsKeyDown(KEY_LEFT_CONTROL))
+        if (IsKeyDown(KEY_SPACE))
         {
-            accelerateToMouse(particles, count, 3000); 
+            accelerateToMouse(particles, 3000); // 3000 seems to be a sufficient strength
         }
 
-        applyConstraint(particles, count);
-        solveCollision(particles, count);
-        applyColor(particles, count, sub_dt);
-        updatePositions(particles, sub_dt, count);
+        applyConstraint(particles);
+        solveCollision(particles);
+        applyColor(particles, sub_dt);
+        updatePositions(particles, sub_dt);
     }
 }
 
-void clearScreen(Particle* particles, int* count)
+/* void clearScreen(particles_da *particles) */
+/* { */
+/*     if (particles->count > 0) */
+/*     { */
+/*         memset(particles, 0, particles->count * sizeof(particles->elements[0])); */
+/*         particles->count = 0; */
+/*     } */
+/* } */
+
+void free_particles(particles_da *particles)
 {
-    if (*count > 0)
-    {
-        memset(particles, 0, *count * sizeof(particles[0]));
-        *count = 0;
+    free(particles->elements);
+    particles->capacity = 0;
+    particles->count = 0;
+}
+
+void clearScreen(particles_da *particles)
+{
+    if (particles->count > 0) {
+        memset(particles->elements, 0, particles->count * sizeof(Particle));
+        particles->count = 0;
     }
 }

@@ -2,6 +2,8 @@
 #define PARTICLE_H
 
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "raylib.h"
 #include "raymath.h"
@@ -21,16 +23,23 @@ typedef struct Particle
     Color color;
 } Particle;
 
+typedef struct {
+    Particle *elements;
+    size_t count;
+    size_t capacity;
+} particles_da;
+
 //Particle particles[MAX_PARTICLES];
 
-void updatePositions(Particle* particles, float dt, int* count);
-void accelerate(Particle* particle, Vector2 acc);
-void applyGravity(Particle* particles, int* count);
-void applyConstraint(Particle* particles, int* count);
-void solveCollision(Particle* particles, int* count);
-void applyColor(Particle* particles, int* count, float dt);
-void accelerateToMouse(Particle* particles, int* count, float strength);
-void update(Particle* particles, int* count, float dt);
-void clearScreen(Particle* particles, int* count);
+void updatePositions(particles_da *particles, float dt);
+void accelerate(Particle *particle, Vector2 acc);
+void applyGravity(particles_da *particles);
+void applyConstraint(particles_da *particles);
+void solveCollision(particles_da *particles);
+void applyColor(particles_da *particles, float dt);
+void accelerateToMouse(particles_da *particles, float strength);
+void update(particles_da *particles, float dt);
+void clearScreen(particles_da *particles);
+void free_particles(particles_da *particles);
 
 #endif
